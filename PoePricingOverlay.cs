@@ -9,7 +9,7 @@ namespace PoePricingOverlay
 {
     public class PoePricingOverlay : BaseSettingsPlugin<PoePricingOverlaySettings>
     {
-        private string[] currencies = new string[] { "Chaos", "Divine" };
+        private string[] currencies = new string[] { "chaos", "divine" };
         private int selectedCurrencyIndex = 0;
         private int stackSize = 1;
         private float pricePerItem = 1.0f;
