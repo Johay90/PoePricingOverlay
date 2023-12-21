@@ -1,9 +1,9 @@
 ﻿using ExileCore;
+using ExileCore.PoEMemory.Components;
 using ExileCore.Shared.Interfaces;
 using ExileCore.Shared.Nodes;
 using ImGuiNET;
 using System;
-using ExileCore.PoEMemory.Components;
 
 namespace PoePricingOverlay
 {
@@ -20,14 +20,19 @@ namespace PoePricingOverlay
         {
             base.Initialise();
             Input.RegisterKey(Settings.ToggleOverlayHotkey);
+            Input.RegisterKey(Settings.UpdateStackSizeHotkey);
             return true;
         }
 
         public override void Render()
         {
-            if (Input.GetKeyState(Settings.ToggleOverlayHotkey))
+            if (Settings.ToggleOverlayHotkey.PressedOnce())
             {
                 overlayVisible = !overlayVisible;
+            }
+
+            if (Settings.UpdateStackSizeHotkey.PressedOnce())
+            {
                 TryUpdateStackSizeFromHoveredItem();
             }
 
