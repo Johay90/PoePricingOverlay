@@ -3,6 +3,7 @@ using ExileCore.Shared.Interfaces;
 using ExileCore.Shared.Nodes;
 using ImGuiNET;
 using System;
+using ExileCore.PoEMemory.Components;
 
 namespace PoePricingOverlay
 {
@@ -27,6 +28,7 @@ namespace PoePricingOverlay
             if (Input.GetKeyState(Settings.ToggleOverlayHotkey))
             {
                 overlayVisible = !overlayVisible;
+                TryUpdateStackSizeFromHoveredItem();
             }
 
             if (overlayVisible)
@@ -70,6 +72,22 @@ namespace PoePricingOverlay
         {
             int totalPrice = (int)Math.Round(stackSize * pricePerItem);
             output = $"~price {totalPrice}/{stackSize} {currencies[selectedCurrencyIndex]}";
+        }
+
+        private void TryUpdateStackSizeFromHoveredItem()
+        {
+            var uiHover = GameController.Game.IngameState.UIHover;
+            var hoveredEntity = uiHover?.Entity;
+
+            if (hoveredEntity != null)
+            {
+                var stackComponent = hoveredEntity.GetComponent<Stack>();
+                if (stackComponent != null)
+                {
+                    stackSize = stackComponent.Size;
+                    UpdateOutput();
+                }
+            }
         }
     }
 }

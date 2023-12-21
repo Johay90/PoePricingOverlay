@@ -6,13 +6,9 @@ namespace PoePricingOverlay;
 
 public class PoePricingOverlaySettings : ISettings
 {
-    //Mandatory setting to allow enabling/disabling your plugin
-    
-
     public PoePricingOverlaySettings()
     {
-        // Default values for settings can be set here
-        ToggleOverlayHotkey = new HotkeyNode(System.Windows.Forms.Keys.F8); // Default hotkey
+        ToggleOverlayHotkey = new HotkeyNode(System.Windows.Forms.Keys.F8);
     }
 
     public ToggleNode Enable { get; set; } = new ToggleNode(false);
