@@ -13,9 +13,11 @@ namespace PoePricingOverlay
         private int selectedCurrencyIndex = 0;
         private int stackSize = 1;
         private float pricePerItem = 1.0f;
-        private string pricePerItemInput = "1"; // Using string to handle fractional input
+        private string pricePerItemInput = "1";
         private string output = "";
         private bool overlayVisible = false;
+        private float unroundedTotalPrice;
+        private int roundingDecimalPlace = 2;
 
         public override bool Initialise()
         {
@@ -41,6 +43,12 @@ namespace PoePricingOverlay
             {
                 ImGui.Begin("Pricing Overlay", ref overlayVisible, ImGuiWindowFlags.AlwaysAutoResize);
 
+                if (ImGui.InputInt("Round to Decimal Place", ref roundingDecimalPlace))
+                {
+                    roundingDecimalPlace = Math.Max(0, roundingDecimalPlace); 
+                    UpdateOutput();
+                }
+
                 if (ImGui.InputInt("Stack Size", ref stackSize))
                 {
                     stackSize = Math.Max(stackSize, 1);
@@ -58,58 +66,59 @@ namespace PoePricingOverlay
                     UpdateOutput();
                 }
 
-                ImGui.Text("Output: ");
-                ImGui.SameLine();
-                if (ImGui.Selectable(output, true))
-                {
-                    ImGui.SetClipboardText(output);
-                }
+                ImGui.Text(output);
+                
+                ImGui.Text($"Unrounded Total Price: {unroundedTotalPrice}");
 
                 if (ImGui.Button("Copy"))
                 {
                     ImGui.SetClipboardText(output);
                 }
 
+                if (ImGui.Button("Reset"))
+                {
+                    stackSize = 1;
+                    pricePerItemInput = "1"; 
+                    pricePerItem = 1.0f;
+                    UpdateOutput();
+                }
+                
                 ImGui.End();
             }
         }
 
         private void UpdateOutput()
         {
-            float totalValue = stackSize * pricePerItem;
-            if (!IsWholeNumber(totalValue))
-            {
-                // If the total price is not a whole number, find the first threshold
-                stackSize = CalculateFirstWholeNumberThreshold(pricePerItem);
-            }
-    
-            int totalPrice = (int)(stackSize * pricePerItem);
-            output = $"~price {totalPrice}/{stackSize} {currencies[selectedCurrencyIndex]}";
+            stackSize = AdjustStackSize(pricePerItem, stackSize);
+            unroundedTotalPrice = stackSize * pricePerItem;
+            int roundedTotalPrice = (int)Math.Round(unroundedTotalPrice);
+            output = $"~price {roundedTotalPrice}/{stackSize} {currencies[selectedCurrencyIndex]}";
         }
 
-        private int CalculateFirstWholeNumberThreshold(float pricePerItem)
+        private int AdjustStackSize(float pricePerItem, int maxStackSize)
         {
-            int thresholdStackSize = 1;
-            while (!IsWholeNumber(thresholdStackSize * pricePerItem))
-            {
-                thresholdStackSize++;
-            }
-            return thresholdStackSize;
-        }
+            int bestStackSize = 1;
+            float bestPriceDifference = float.MaxValue;
 
-        private int CalculateMaxWholeNumberStackSize(float pricePerItem, int maxStackSize)
-        {
-            int stackSize = maxStackSize;
-            while (stackSize > 1 && !IsWholeNumber(stackSize * pricePerItem))
+            if (pricePerItem == 1.0f)
             {
-                stackSize--;
+                return maxStackSize;
             }
-            return stackSize;
-        }
 
-        private bool IsWholeNumber(float value)
-        {
-            return Math.Abs(value % 1) <= (double.Epsilon * 100);
+            for (int i = 1; i <= maxStackSize; i++)
+            {
+                float totalValue = i * pricePerItem;
+                float roundedTotalValue = (float)Math.Round(totalValue, roundingDecimalPlace);
+                float priceDifference = Math.Abs(roundedTotalValue - totalValue);
+
+                // Checking if the current stack size results in a closer match to a whole number
+                if (priceDifference < bestPriceDifference || (priceDifference == bestPriceDifference && i > bestStackSize))
+                {
+                    bestStackSize = i;
+                    bestPriceDifference = priceDifference;
+                }
+            }
+            return bestStackSize;
         }
 
         private float ParsePricePerItem(string input)
@@ -127,7 +136,7 @@ namespace PoePricingOverlay
                 return value;
             }
 
-            return 1f; // Default value if parsing fails
+            return 1f;
         }
 
         private void TryUpdateStackSizeFromHoveredItem()
@@ -140,9 +149,8 @@ namespace PoePricingOverlay
                 var stackComponent = hoveredEntity.GetComponent<Stack>();
                 if (stackComponent != null)
                 {
-                    stackSize = stackComponent.Size;
-                    stackSize = CalculateMaxWholeNumberStackSize(pricePerItem, stackSize);
-                    UpdateOutput();
+                    stackSize = stackComponent.Size; 
+                    UpdateOutput(); 
                 }
             }
         }
